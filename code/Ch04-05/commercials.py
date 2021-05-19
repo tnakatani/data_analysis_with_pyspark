@@ -4,7 +4,7 @@
 # dataset.
 #
 ###############################################################################
-
+import logging
 import os
 
 import pyspark.sql.functions as F
@@ -15,29 +15,30 @@ spark = SparkSession.builder.appName(
 ).getOrCreate()
 
 spark.sparkContext.setLogLevel("WARN")
+logging.getLogger().setLevel(logging.INFO)
 
 ###############################################################################
 # Reading all the relevant data sources
 ###############################################################################
 
-DIRECTORY = "./data/Ch03"
+DIRECTORY = "./data/Ch04"
 
 logs = spark.read.csv(
-    os.path.join(DIRECTORY, "BroadcastLogs_2018_Q3_M8.CSV"),
+    os.path.join(DIRECTORY, "BroadcastLogs_2018_Q3_M8_sample.CSV"),
     sep="|",
     header=True,
     inferSchema=True,
 )
 
 log_identifier = spark.read.csv(
-    "./data/Ch03/ReferenceTables/LogIdentifier.csv",
+    "./data/Ch04/ReferenceTables/LogIdentifier.csv",
     sep="|",
     header=True,
     inferSchema=True,
 )
 
 cd_category = spark.read.csv(
-    "./data/Ch03/ReferenceTables/CD_Category.csv",
+    "./data/Ch04/ReferenceTables/CD_Category.csv",
     sep="|",
     header=True,
     inferSchema=True,
@@ -48,7 +49,7 @@ cd_category = spark.read.csv(
 )
 
 cd_program_class = spark.read.csv(
-    "./data/Ch03/ReferenceTables/CD_ProgramClass.csv",
+    "./data/Ch04/ReferenceTables/CD_ProgramClass.csv",
     sep="|",
     header=True,
     inferSchema=True,
@@ -98,3 +99,11 @@ full_log.groupby("LogIdentifierID").agg(
 ).show(
     1000, False
 )
+
+###############################################################################
+# Write to file
+###############################################################################
+
+OUTPUT_PATH = "./data/ch05/"
+logging.info(f"Writing to {OUTPUT_PATH}")
+full_log.coalesce(1).write.mode("overwrite").csv(OUTPUT_PATH, sep="|", header=True)
