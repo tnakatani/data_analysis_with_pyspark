@@ -1,8 +1,8 @@
 import logging
 
+import pyspark.sql.functions as F
 from pyspark import SparkConf
 from pyspark.sql import SparkSession
-import pyspark.sql.functions as F
 
 conf = SparkConf()
 conf.set("spark.logConf", "true")
@@ -43,12 +43,9 @@ cs = spark.read.csv(
 full_log = full_log.join(cs, on="LogIdentifierID", how="left")
 assert "Undertaking_Name" in full_log.columns
 
-un_counts = (
-    full_log.groupby("UnderTaking_Name").count().orderBy("count", ascending=False)
-)
-logging.info("Undertaking Counts:")
-logging.info(un_counts.show(20, False))
-
+# un_counts = full_log.groupby("UnderTaking_Name").count().orderBy("count", ascending=False)
+# logging.info("Undertaking Counts:")
+# logging.info(un_counts.show(20, False))
 
 """Exercise 2
 The government of Canada is asking for your analysis, but they’d like the PRC to be weighted 
@@ -58,9 +55,7 @@ program to account for this change.
 
 # Logic for summing commercial time, with exception to PRC
 is_commercial = F.when(
-    F.trim(F.col("ProgramClassCD")).isin(
-        ["COM", "PGI", "PRO", "LOC", "SPO", "MER", "SOL"]
-    ),
+    F.trim(F.col("ProgramClassCD")).isin(["COM", "PGI", "PRO", "LOC", "SPO", "MER", "SOL"]),
     F.col("duration_seconds"),
 ).when(
     F.trim(F.col("ProgramClassCD")).isin(["PRC"]),
@@ -74,18 +69,23 @@ commercial_time = (
         F.sum(is_commercial).alias("duration_commercial"),
         F.sum("duration_seconds").alias("duration_total"),
     )
-    .withColumn(
-        "commercial_ratio", F.col("duration_commercial") / F.col("duration_total")
-    )
-    .withColumn(
-        "commercial_ratio_percent", F.round(F.col("commercial_ratio") * 100, 1)
-    )
+    .withColumn("commercial_ratio", F.col("duration_commercial") / F.col("duration_total"))
+    .withColumn("commercial_ratio_percent", F.round(F.col("commercial_ratio") * 100, 1))
 )
 
 # Show results
-commercial_time.orderBy("commercial_ratio_percent", ascending=False).show(20, False)
+# commercial_time.orderBy("commercial_ratio_percent", ascending=False).show(20, False)
 
 
 """Exercise 3
-
+On the data frame returned from commercials.py, return the percentage of channels in each bucket 
+based on their commercial_ratio. (Hint: look at the documentation for round in how to truncate a value.)
 """
+
+commercial_ratio_binned = (
+    commercial_time.groupby(F.round(F.col("commercial_ratio"), 1))
+    .count()
+    .withColumnRenamed("round(commercial_ratio, 1)", "commercial_ratio")
+)
+
+commercial_ratio_binned.orderBy("commercial_ratio", ascending=False).show()
