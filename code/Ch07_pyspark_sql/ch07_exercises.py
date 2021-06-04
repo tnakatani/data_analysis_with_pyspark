@@ -14,7 +14,7 @@ from pyspark.sql import SparkSession
 
 conf = SparkConf()
 conf.set("spark.logConf", "true")
-spark = SparkSession.builder.config(conf=conf).appName("Ch07 Exercises").getOrCreate()
+spark = SparkSession.builder.config(conf=conf).appName("Ch07_pyspark_sql Exercises").getOrCreate()
 spark.sparkContext.setLogLevel("WARN")
 logging.getLogger().setLevel(logging.INFO)
 
@@ -22,7 +22,7 @@ logging.getLogger().setLevel(logging.INFO)
 # Data Ingestion
 ####################################################################################################
 
-DATA_DIRECTORY = "../../data/Ch07/"
+DATA_DIRECTORY = "../../data/Ch07_pyspark_sql/"
 backblaze_2019 = spark.read.csv(
     os.path.join(DATA_DIRECTORY, "data_Q3_2019", "2019-07-01.csv"), header=True, inferSchema=True
 )
